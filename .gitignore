@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment
+.env
+
+# Node / Frontend
+frontend/node_modules/
+frontend/.next/
+*.tsbuildinfo
+
+# Storage runtime artifacts (preserve directory structure via .gitkeep)
+storage/uploads/*
+!storage/uploads/.gitkeep
+storage/proxies/*
+!storage/proxies/.gitkeep
+storage/frames/*
+!storage/frames/.gitkeep
+storage/datasets/*
+!storage/datasets/.gitkeep
+storage/golden_set/*
+!storage/golden_set/.gitkeep
+storage/models_weights/*
+!storage/models_weights/.gitkeep
+storage/exports/*
+!storage/exports/.gitkeep
+storage/norms_pdfs/*
+!storage/norms_pdfs/.gitkeep

@@ -1,0 +1,23 @@
+# Explicit NVIDIA GPU override — Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build
+
+services:
+  worker-ml:
+    build:
+      context: ./backend
+      dockerfile: docker/Dockerfile.worker-ml
+      args:
+        TORCH_INDEX_URL: https://download.pytorch.org/whl/cu124
+        TORCH_PKG: torch==2.5.1+cu124
+        TORCHVISION_PKG: torchvision==0.20.1+cu124
+    environment:
+      ELECTROVISION_DEVICE: cuda
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

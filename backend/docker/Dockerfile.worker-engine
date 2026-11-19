@@ -1,0 +1,42 @@
+# =============================================================================
+# Stage 1: Builder (uv + Engine stack: ezdxf, python-docx, openpyxl, ONNX)
+# =============================================================================
+FROM python:3.12-slim AS builder
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=never
+
+WORKDIR /app
+
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --extra engine --no-install-project
+
+COPY app ./app
+RUN uv sync --frozen --no-dev --extra engine
+
+# =============================================================================
+# Stage 2: Runtime (Isolated Engineering & CAD Celery Worker: engine_queue)
+# =============================================================================
+FROM python:3.12-slim AS runtime
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --gid 10001 appuser \
+    && useradd --uid 10001 --gid appuser --shell /bin/false --create-home appuser
+
+WORKDIR /app
+
+COPY --from=builder --chown=appuser:appuser /app/.venv /app/.venv
+COPY --from=builder --chown=appuser:appuser /app/app /app/app
+
+ENV PATH="/app/.venv/bin:$PATH" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+USER appuser
+
+CMD ["celery", "-A", "app.core.celery_app:celery_app", "worker", "-Q", "engine_queue", "--include=app.services.doc_engine.export_pipeline", "--concurrency=2", "--loglevel=info"]

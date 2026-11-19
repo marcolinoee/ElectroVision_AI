@@ -1,0 +1,135 @@
+name: electrovision-ai
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: ev_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-electrovision}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-electrovision_local_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-electrovision}
+    ports:
+      - "${POSTGRES_HOST_PORT:-5435}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-electrovision} -d ${POSTGRES_DB:-electrovision}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: ev_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_HOST_PORT:-6380}:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: docker/Dockerfile.api
+    container_name: ev_api
+    restart: unless-stopped
+    env_file:
+      - .env.example
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://electrovision:electrovision_local_secret@postgres:5432/electrovision}
+      DATABASE_SYNC_URL: ${DATABASE_SYNC_URL:-postgresql+psycopg://electrovision:electrovision_local_secret@postgres:5432/electrovision}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
+      STORAGE_ROOT: /app/storage
+      CORS_ORIGINS: '["http://localhost:3030","http://127.0.0.1:3030"]'
+    ports:
+      - "${API_HOST_PORT:-8030}:8000"
+    volumes:
+      - ./storage:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  worker-ml:
+    build:
+      context: ./backend
+      dockerfile: docker/Dockerfile.worker-ml
+      args:
+        TORCH_INDEX_URL: https://download.pytorch.org/whl/cpu
+    container_name: ev_worker_ml
+    restart: unless-stopped
+    env_file:
+      - .env.example
+    environment:
+      ELECTROVISION_DEVICE: cpu
+      DATABASE_SYNC_URL: ${DATABASE_SYNC_URL:-postgresql+psycopg://electrovision:electrovision_local_secret@postgres:5432/electrovision}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
+      STORAGE_ROOT: /app/storage
+    command: ["celery", "-A", "app.core.celery_app:celery_app", "worker", "-Q", "vision_queue,train_queue", "--include=app.services.vision.pipeline,app.services.ml_ops.yolo_trainer", "--concurrency=1", "--loglevel=info"]
+    volumes:
+      - ./storage:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker-engine:
+    build:
+      context: ./backend
+      dockerfile: docker/Dockerfile.worker-engine
+    container_name: ev_worker_engine
+    restart: unless-stopped
+    env_file:
+      - .env.example
+    environment:
+      DATABASE_SYNC_URL: ${DATABASE_SYNC_URL:-postgresql+psycopg://electrovision:electrovision_local_secret@postgres:5432/electrovision}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
+      STORAGE_ROOT: /app/storage
+    command: ["celery", "-A", "app.core.celery_app:celery_app", "worker", "-Q", "engine_queue", "--include=app.services.doc_engine.export_pipeline", "--concurrency=2", "--loglevel=info"]
+    volumes:
+      - ./storage:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8030}
+    container_name: ev_frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8030}
+    ports:
+      - "${FRONTEND_HOST_PORT:-3030}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  redisdata:
