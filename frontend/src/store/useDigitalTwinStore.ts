@@ -317,6 +317,8 @@ export const useDigitalTwinStore = create<DigitalTwinState>()(
       partialize: (state) => ({
         digitalTwin: state.digitalTwin,
       }),
+      equality: (pastState, currentState) =>
+        pastState.digitalTwin === currentState.digitalTwin,
     }
   )
 );

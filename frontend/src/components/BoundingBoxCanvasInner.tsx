@@ -24,13 +24,20 @@ export default function BoundingBoxCanvasInner() {
   useEffect(() => {
     const tr = trRef.current;
     if (!tr) return;
-    if (selectedComponentId && shapeRefs.current[selectedComponentId]) {
-      tr.nodes([shapeRefs.current[selectedComponentId]!]);
-    } else {
+    const targetNode = selectedComponentId
+      ? shapeRefs.current[selectedComponentId] ?? null
+      : null;
+    const currentNodes = tr.nodes();
+    if (targetNode) {
+      if (currentNodes.length !== 1 || currentNodes[0] !== targetNode) {
+        tr.nodes([targetNode]);
+        tr.getLayer()?.batchDraw();
+      }
+    } else if (currentNodes.length > 0) {
       tr.nodes([]);
+      tr.getLayer()?.batchDraw();
     }
-    tr.getLayer()?.batchDraw();
-  }, [selectedComponentId, digitalTwin.components]);
+  }, [selectedComponentId]);
 
   const selectedComp = digitalTwin.components.find(
     (c) => c.component_id === selectedComponentId

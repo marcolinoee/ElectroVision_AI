@@ -11,6 +11,7 @@ export default function MLTrainingPage() {
   const [epochs, setEpochs] = useState(20);
   const [replayRatio, setReplayRatio] = useState(0.5);
   const [trainJobId, setTrainJobId] = useState<string | null>(null);
+  const [harvestJobId, setHarvestJobId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const [standardCode, setStandardCode] = useState("NBR 5410");
@@ -38,6 +39,18 @@ export default function MLTrainingPage() {
     }
   }
 
+  async function handleStartHarvest(maxMb: number, maxItems: number) {
+    setErrorMsg(null);
+    try {
+      const dispatch = await api.startHarvest(maxMb, undefined, maxItems);
+      setHarvestJobId(dispatch.job_id);
+    } catch (err) {
+      setErrorMsg(
+        err instanceof Error ? err.message : "Falha ao iniciar Dataset Harvester."
+      );
+    }
+  }
+
   async function handleImportPdf(e: React.FormEvent) {
     e.preventDefault();
     if (!pdfFile) return;
@@ -61,6 +74,44 @@ export default function MLTrainingPage() {
           <strong>mAP50-95</strong> no <em>Golden Holdout Set</em> fixo e mantiver{" "}
           <strong>Recall ≥ 95%</strong> em IDR, DPS e Disjuntor.
         </p>
+      </div>
+
+      {/* Public Dataset Harvester (1 GB Hard Quota) */}
+      <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
+          <Cpu className="h-4 w-4 text-emerald-600" />
+          Dataset Harvester — Coleta Pública de Engenharia Elétrica (Teto Rígido 1 GB)
+        </div>
+        <p className="mt-1 text-xs text-slate-600">
+          Coleta imagens abertas (Wikimedia Commons, Hugging Face Streaming, YOLO públicos e símbolos
+          CAD IEC/NBR) com filtro de blur, deduplicação pHash e teto de 950 MB úteis.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => handleStartHarvest(20, 25)}
+            className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50"
+          >
+            <Play className="h-3.5 w-3.5" />
+            Executar Dry-Run (20 MB)
+          </button>
+          <button
+            type="button"
+            onClick={() => handleStartHarvest(950, 1500)}
+            className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
+          >
+            <Play className="h-3.5 w-3.5" />
+            Iniciar Coleta Completa (950 MB)
+          </button>
+        </div>
+        {harvestJobId && (
+          <div className="mt-4">
+            <JobProgressSSE
+              jobId={harvestJobId}
+              title="Dataset Harvester (train_queue)"
+            />
+          </div>
+        )}
       </div>
 
       {/* Trigger Active Learning */}

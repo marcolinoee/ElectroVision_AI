@@ -18,24 +18,31 @@ export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8030";
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers || {}),
-    },
-  });
-  if (!res.ok) {
-    let detail = `HTTP ${res.status}`;
-    try {
-      const body = await res.json();
-      detail = body.detail || JSON.stringify(body);
-    } catch {
-      // keep status text
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  try {
+    const res = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      signal: init?.signal ?? controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        ...(init?.headers || {}),
+      },
+    });
+    if (!res.ok) {
+      let detail = `HTTP ${res.status}`;
+      try {
+        const body = await res.json();
+        detail = body.detail || JSON.stringify(body);
+      } catch {
+        // keep status text
+      }
+      throw new Error(detail);
     }
-    throw new Error(detail);
+    return res.json() as Promise<T>;
+  } finally {
+    clearTimeout(timeoutId);
   }
-  return res.json() as Promise<T>;
 }
 
 export const api = {
@@ -62,6 +69,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ project_id, title }),
     }),
+
+  listInspections: () => requestJson<InspectionSummary[]>("/api/v1/inspections"),
 
   getInspection: (inspectionId: string) =>
     requestJson<InspectionSummary>(`/api/v1/inspections/${inspectionId}`),
@@ -100,14 +109,11 @@ export const api = {
       { method: "POST" }
     ),
 
-  previewCompliance: (inspectionId: string, digitalTwin: DigitalTwinJSON) =>
-    requestJson<ComplianceReport>(
-      `/api/v1/inspections/${inspectionId}/compliance-preview`,
-      {
-        method: "POST",
-        body: JSON.stringify(digitalTwin),
-      }
-    ),
+  previewCompliance: (_inspectionId: string, digitalTwin: DigitalTwinJSON) =>
+    requestJson<ComplianceReport>("/api/v1/compliance/preview", {
+      method: "POST",
+      body: JSON.stringify(digitalTwin),
+    }),
 
   signOffInspection: (
     inspectionId: string,
@@ -146,6 +152,16 @@ export const api = {
     requestJson<JobDispatchResponse>("/api/v1/ml/train", {
       method: "POST",
       body: JSON.stringify({ epochs, replay_ratio }),
+    }),
+
+  startHarvest: (max_mb: number, sources?: string[], max_items_per_source?: number) =>
+    requestJson<JobDispatchResponse>("/api/v1/ml/harvest/start", {
+      method: "POST",
+      body: JSON.stringify({
+        max_mb,
+        sources: sources ?? ["wikimedia", "huggingface", "public_yolo", "cad_symbols"],
+        max_items_per_source: max_items_per_source ?? 1500,
+      }),
     }),
 
   importNormPdf: async (standardCode: string, file: File) => {

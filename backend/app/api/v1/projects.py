@@ -68,6 +68,12 @@ async def create_inspection(
     return inspection
 
 
+@router.get("/inspections", response_model=list[InspectionResponse])
+async def list_inspections(db: DbSession) -> list[Inspection]:
+    result = await db.scalars(select(Inspection).order_by(Inspection.created_at.desc()))
+    return list(result.all())
+
+
 @router.get("/inspections/{inspection_id}", response_model=InspectionResponse)
 async def get_inspection(inspection_id: UUID, db: DbSession) -> Inspection:
     inspection = await db.get(Inspection, inspection_id)

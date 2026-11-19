@@ -193,11 +193,20 @@ export default function NewProjectPage() {
       </form>
 
       {jobId && (
-        <JobProgressSSE
-          jobId={jobId}
-          title="Inferência YOLO + OCR + Cores (vision_queue)"
-          onCompleted={() => router.push("/editor")}
-        />
+        <div className="space-y-3">
+          <JobProgressSSE
+            jobId={jobId}
+            title="Inferência YOLO + OCR + Cores (vision_queue)"
+            onCompleted={() => router.push("/editor")}
+          />
+          <button
+            type="button"
+            onClick={() => router.push("/editor")}
+            className="w-full rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            Abrir Editor Digital Twin Agora
+          </button>
+        </div>
       )}
     </div>
   );

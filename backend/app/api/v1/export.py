@@ -42,6 +42,17 @@ class NormPdfImportResponse(BaseModel):
 
 
 @router.post(
+    "/compliance/preview",
+    response_model=ComplianceReport,
+)
+async def preview_compliance_stateless(
+    digital_twin: DigitalTwinJSON,
+) -> ComplianceReport:
+    """Stateless deterministic NBR 5410 / NR-10 / NBR 14039 evaluation for any DigitalTwinJSON."""
+    return evaluate_digital_twin_compliance(digital_twin)
+
+
+@router.post(
     "/inspections/{inspection_id}/compliance-preview",
     response_model=ComplianceReport,
 )
