@@ -1,4 +1,4 @@
-.PHONY: up up-gpu down logs migrate seed test lint lock init-storage
+.PHONY: up up-gpu down logs migrate seed test lint lock init-storage harvest-dry-run harvest-1gb
 
 init-storage:
 	@mkdir -p storage/uploads storage/proxies storage/frames storage/datasets storage/golden_set storage/models_weights storage/exports storage/norms_pdfs
@@ -29,3 +29,9 @@ test:
 
 lint:
 	cd backend && uv run --extra dev ruff check app tests
+
+harvest-dry-run:
+	docker compose exec worker-ml python -m app.services.ml_ops.harvester.cli --max-mb 20 --max-items-per-source 25
+
+harvest-1gb:
+	docker compose exec worker-ml python -m app.services.ml_ops.harvester.cli --max-mb 950

@@ -34,6 +34,16 @@ class TrainRequest(BaseModel):
     replay_ratio: float = Field(default=0.5, ge=0.0, le=2.0)
 
 
+class HarvestStartRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    max_mb: int = Field(default=950, ge=1, le=950)
+    sources: list[str] = Field(
+        default_factory=lambda: ["wikimedia", "huggingface", "public_yolo", "cad_symbols"]
+    )
+    max_items_per_source: int = Field(default=1500, ge=1, le=10000)
+
+
 class DatasetExportResponse(BaseModel):
     sample_id: UUID
     inspection_id: UUID
@@ -132,6 +142,31 @@ async def dispatch_active_learning_training(payload: TrainRequest) -> JobDispatc
     async_result = celery_app.send_task(
         "app.services.ml_ops.yolo_trainer.run_active_learning_train_task",
         kwargs={"epochs": payload.epochs, "replay_ratio": payload.replay_ratio},
+        queue="train_queue",
+    )
+    job_id = str(async_result.id)
+    return JobDispatchResponse(
+        job_id=job_id,
+        queue="train_queue",
+        status="QUEUED",
+        sse_url=f"/api/v1/events/jobs/{job_id}",
+    )
+
+
+@router.post(
+    "/ml/harvest/start",
+    response_model=JobDispatchResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def start_public_dataset_harvest(payload: HarvestStartRequest) -> JobDispatchResponse:
+    """Dispatch public electrical dataset harvesting (hard <= 950 MB quota) to `train_queue`."""
+    async_result = celery_app.send_task(
+        "app.services.ml_ops.harvester.pipeline.run_dataset_harvest_task",
+        kwargs={
+            "max_mb": payload.max_mb,
+            "sources": payload.sources,
+            "max_items_per_source": payload.max_items_per_source,
+        },
         queue="train_queue",
     )
     job_id = str(async_result.id)

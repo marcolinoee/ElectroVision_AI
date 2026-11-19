@@ -1,0 +1,164 @@
+# Unified ElectroVision AI Public Harvest Taxonomy (Classes 0..9)
+# Maps heterogeneous public dataset labels (EN, PT-BR, IEC, Roboflow, HuggingFace)
+# deterministically onto the fixed 10-class schema.
+
+classes:
+  0: electrical_panel
+  1: breaker_1p
+  2: breaker_2p
+  3: breaker_3p
+  4: idr_rcd
+  5: dps_spd
+  6: busbar
+  7: cable_wiring
+  8: transformer
+  9: nameplate_label
+
+synonyms:
+  electrical_panel:
+    - electrical_panel
+    - electrical panel
+    - distribution board
+    - distribution_board
+    - breaker panel
+    - breaker_panel
+    - breaker box
+    - circuit breaker panel
+    - panelboard
+    - switchgear
+    - quadro eletrico
+    - quadro de distribuicao
+    - quadro_distribuicao
+    - qdc
+    - qgbt
+    - electrical cabinet
+    - fuse box
+    - consumer unit
+
+  breaker_1p:
+    - breaker_1p
+    - breaker 1p
+    - 1p breaker
+    - single pole breaker
+    - mcb 1p
+    - mcb_1p
+    - mcb
+    - circuit breaker
+    - circuit_breaker
+    - mini circuit breaker
+    - disjuntor
+    - disjuntor monopolar
+    - disjuntor 1p
+    - disjuntor_circuito
+    - din breaker
+    - breaker
+
+  breaker_2p:
+    - breaker_2p
+    - breaker 2p
+    - 2p breaker
+    - double pole breaker
+    - two pole breaker
+    - mcb 2p
+    - mcb_2p
+    - disjuntor bipolar
+    - disjuntor 2p
+
+  breaker_3p:
+    - breaker_3p
+    - breaker 3p
+    - 3p breaker
+    - three pole breaker
+    - triple pole breaker
+    - mcb 3p
+    - mcb_3p
+    - mccb
+    - molded case circuit breaker
+    - disjuntor tripolar
+    - disjuntor 3p
+    - disjuntor caixa moldada
+    - disjuntor_geral
+    - main breaker
+    - main_breaker
+
+  idr_rcd:
+    - idr_rcd
+    - idr
+    - dr
+    - rcd
+    - rccb
+    - rcbo
+    - gfci
+    - residual current device
+    - residual current breaker
+    - interruptor diferencial
+    - interruptor diferencial residual
+    - disjuntor diferencial
+
+  dps_spd:
+    - dps_spd
+    - dps
+    - spd
+    - surge protector
+    - surge protection device
+    - surge arrester
+    - lightning arrester
+    - protetor de surto
+    - dispositivo de protecao contra surtos
+
+  busbar:
+    - busbar
+    - bus bar
+    - copper busbar
+    - comb busbar
+    - neutral bar
+    - earth bar
+    - ground bar
+    - terminal block
+    - barramento
+    - barramento de cobre
+    - barramento pente
+    - barramento_fase
+    - barramento_neutro
+    - barramento_terra
+
+  cable_wiring:
+    - cable_wiring
+    - cable
+    - wire
+    - wiring
+    - conductor
+    - power cable
+    - electrical wire
+    - harness
+    - cabo
+    - cabos
+    - fiacao
+    - condutor
+    - cabo_fase
+    - cabo_neutro
+    - cabo_terra
+
+  transformer:
+    - transformer
+    - power transformer
+    - distribution transformer
+    - substation transformer
+    - current transformer
+    - potential transformer
+    - transformador
+    - trafo
+
+  nameplate_label:
+    - nameplate_label
+    - nameplate
+    - rating plate
+    - label
+    - circuit label
+    - panel schedule
+    - warning label
+    - sticker
+    - etiqueta
+    - placa de identificacao
+    - identificacao circuito
+    - plaqueta

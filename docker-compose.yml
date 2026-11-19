@@ -82,7 +82,7 @@ services:
       CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
       CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
       STORAGE_ROOT: /app/storage
-    command: ["celery", "-A", "app.core.celery_app:celery_app", "worker", "-Q", "vision_queue,train_queue", "--include=app.services.vision.pipeline,app.services.ml_ops.yolo_trainer", "--concurrency=1", "--loglevel=info"]
+    command: ["celery", "-A", "app.core.celery_app:celery_app", "worker", "-Q", "vision_queue,train_queue", "--include=app.services.vision.pipeline,app.services.ml_ops.yolo_trainer,app.services.ml_ops.harvester.pipeline", "--concurrency=1", "--loglevel=info"]
     volumes:
       - ./storage:/app/storage
     depends_on:
